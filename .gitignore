@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 venv/
 .env
+instance/
 instance/*.db
 instance/*.sqlite
 instance/*.sqlite3
