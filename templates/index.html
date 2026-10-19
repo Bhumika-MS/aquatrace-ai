@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1930">
+  <title>AquaTrace AI · Smart Campus Water Intelligence</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="{{ url_for('dashboard') }}" aria-label="AquaTrace AI dashboard">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" role="img"><path d="M20 3C16 10 8 17 8 24a12 12 0 0 0 24 0C32 17 24 10 20 3Z" fill="currentColor"/><path d="M14 25c.5 3.5 2.5 5.5 6 6" fill="none" stroke="#0b1930" stroke-width="2.2" stroke-linecap="round"/></svg>
+        </span>
+        <span><strong>AquaTrace</strong><small>AI WATER INTELLIGENCE</small></span>
+      </a>
+
+      <div class="sidebar-label">WORKSPACE</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        <a class="nav-link active" href="{{ url_for('dashboard') }}"><span class="nav-icon">▦</span> Dashboard</a>
+        <a class="nav-link" href="#zone-analysis"><span class="nav-icon">⌁</span> Zone analysis</a>
+        <a class="nav-link" href="#add-reading"><span class="nav-icon">＋</span> Add a reading</a>
+        <a class="nav-link" href="{{ url_for('export_csv') }}"><span class="nav-icon">⇩</span> Export report</a>
+      </nav>
+
+      <div class="sidebar-spacer"></div>
+      <div class="side-status">
+        <div class="status-orb"><span></span></div>
+        <div><strong>Local demo mode</strong><small>No external API required</small></div>
+      </div>
+      <div class="sidebar-foot">HACKFEST 2026 · TEAM INNOVEXA</div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="breadcrumb"><span>Workspace</span><span class="crumb-slash">/</span><strong>Water intelligence</strong></div>
+        <div class="topbar-right"><span class="demo-pill"><span></span> SIMULATED DATA</span><div class="avatar">IX</div></div>
+      </header>
+
+      <section class="page-heading">
+        <div>
+          <div class="eyebrow"><span class="eyebrow-line"></span> SMART CAMPUS · RESOURCE EFFICIENCY</div>
+          <h1>Water intelligence,<br><span>made actionable.</span></h1>
+          <p class="heading-copy">Spot unusual consumption, review probable leak zones, and prioritize inspections before excess water use goes unchecked.</p>
+        </div>
+        <div class="heading-art" aria-hidden="true">
+          <div class="art-ring ring-one"></div><div class="art-ring ring-two"></div>
+          <div class="art-drop"><svg viewBox="0 0 110 130"><path d="M55 8C44 28 18 54 18 79a37 37 0 0 0 74 0C92 54 66 28 55 8Z" fill="url(#dropFill)"/><path d="M37 81c2 10 9 16 19 18" fill="none" stroke="#e2fff8" stroke-width="5" stroke-linecap="round"/><defs><linearGradient id="dropFill" x1="15" y1="15" x2="90" y2="110" gradientUnits="userSpaceOnUse"><stop stop-color="#92f2d9"/><stop offset="1" stop-color="#25a8c3"/></linearGradient></defs></svg></div>
+          <span class="art-dot dot-a"></span><span class="art-dot dot-b"></span><span class="art-dot dot-c"></span>
+        </div>
+      </section>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+            {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <section class="stat-grid" aria-label="Water usage summary">
+        <article class="stat-card stat-primary">
+          <div class="stat-top"><span class="stat-label">LATEST DAILY USAGE</span><span class="stat-icon">◉</span></div>
+          <div class="stat-value">{{ "{:,.0f}".format(data.total_latest) }}<span class="stat-unit">L</span></div>
+          <div class="stat-footer"><span class="tiny-trend">↗</span> Combined latest readings across campus zones</div>
+          <div class="stat-watermark">L</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-top"><span class="stat-label">ZONES TO REVIEW</span><span class="stat-icon icon-amber">!</span></div>
+          <div class="stat-value">{{ data.flagged_count }}<span class="stat-unit">/ {{ data.zones|length }}</span></div>
+          <div class="stat-footer"><span class="mini-dot dot-amber"></span> Show a material increase vs. recent baseline</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-top"><span class="stat-label">ESTIMATED EXCESS</span><span class="stat-icon icon-blue">≈</span></div>
+          <div class="stat-value">{{ "{:,.0f}".format(data.total_excess) }}<span class="stat-unit">L</span></div>
+          <div class="stat-footer">Difference above baseline in flagged zones</div>
+        </article>
+        <article class="stat-card">
+          <div class="stat-top"><span class="stat-label">METER ZONES</span><span class="stat-icon icon-green">⌖</span></div>
+          <div class="stat-value">{{ data.zones|length }}<span class="stat-unit"> zones</span></div>
+          <div class="stat-footer">{{ data.all_readings }} readings stored locally</div>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="panel usage-panel">
+          <div class="panel-heading">
+            <div><div class="panel-kicker">WEEKLY OVERVIEW</div><h2>Campus consumption</h2><p>Combined usage across zones · litres per day</p></div>
+            <span class="panel-tag"><span></span> 7-day sample</span>
+          </div>
+          <div class="chart-area">
+            <div class="chart-guides"><span>{{ "{:,.0f}".format(data.max_total) }}</span><span>{{ "{:,.0f}".format(data.max_total * 0.66) }}</span><span>{{ "{:,.0f}".format(data.max_total * 0.33) }}</span><span>0</span></div>
+            <div class="bar-chart" role="img" aria-label="Bar chart showing combined campus water use for seven days">
+              {% for point in data.chart %}
+              <div class="bar-column" title="{{ point.date }}: {{ '{:,.0f}'.format(point.total) }} litres">
+                <div class="bar-value">{{ "{:,.0f}".format(point.total / 1000) }}k</div>
+                <div class="bar-track"><div class="bar-fill {% if loop.last %}bar-current{% endif %}" style="height: {{ point.height }}%"></div></div>
+                <span class="bar-day">{{ point.day }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="chart-legend"><span class="legend-swatch"></span> Daily meter total <span class="legend-swatch current"></span> Latest day</div>
+        </article>
+
+        <article class="panel insight-panel">
+          <div class="panel-heading compact-heading"><div><div class="panel-kicker">ACTION INSIGHT</div><h2>What to inspect first</h2></div><span class="insight-star">✦</span></div>
+          {% set top_flagged = (data.zones|selectattr('flagged')|list) %}
+          {% if top_flagged %}
+          <div class="insight-callout">
+            <div class="callout-icon">⌁</div>
+            <div><strong>{{ top_flagged[0].zone }}</strong><p>Highest prototype risk score · {{ "{:+.1f}".format(top_flagged[0].percent_change) }}% vs. baseline</p></div>
+          </div>
+          <div class="insight-metric-row"><div><span class="metric-label">POTENTIAL EXCESS</span><strong>{{ "{:,.0f}".format(top_flagged[0].excess) }} <small>L</small></strong></div><div><span class="metric-label">RISK SCORE</span><strong>{{ "{:.0f}".format(top_flagged[0].score) }}<small>/100</small></strong></div></div>
+          <div class="priority-note"><span class="priority-bullet"></span><span>{{ top_flagged[0].note }}</span></div>
+          {% else %}
+          <div class="empty-insight"><span>✓</span><strong>No zone currently meets the demo alert threshold.</strong><p>Continue monitoring readings and review unusual changes.</p></div>
+          {% endif %}
+          <a class="text-link" href="#zone-analysis">Review all zone results <span>→</span></a>
+        </article>
+      </section>
+
+      <section class="panel zones-panel" id="zone-analysis">
+        <div class="panel-heading zones-heading">
+          <div><div class="panel-kicker">ANOMALY REVIEW</div><h2>Zone-level analysis</h2><p>Latest reading compared with up to six prior readings for that zone.</p></div>
+          <a class="outline-button" href="{{ url_for('export_csv') }}"><span>⇩</span> Export CSV</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ZONE</th><th>LATEST USAGE</th><th>BASELINE AVG.</th><th>CHANGE</th><th>EXCESS EST.</th><th>RISK</th><th>SUGGESTED ACTION</th></tr></thead>
+            <tbody>
+              {% for zone in data.zones %}
+              <tr>
+                <td><div class="zone-cell"><span class="zone-symbol {% if zone.flagged %}zone-symbol-alert{% endif %}">{% if 'Hostel' in zone.zone %}⌂{% elif 'Canteen' in zone.zone %}▤{% elif 'Sports' in zone.zone %}◎{% elif 'Lab' in zone.zone %}⌬{% elif 'Library' in zone.zone %}▥{% else %}▦{% endif %}</span><div><strong>{{ zone.zone }}</strong><small>{{ 'Flagged for review' if zone.flagged else 'Within demo threshold' }}</small></div></div></td>
+                <td class="number-cell">{{ "{:,.0f}".format(zone.latest) }} <span>L</span></td>
+                <td class="number-cell muted-number">{{ "{:,.0f}".format(zone.baseline) }} <span>L</span></td>
+                <td><span class="change-pill {% if zone.percent_change >= 20 %}change-up{% elif zone.percent_change < 0 %}change-down{% else %}change-flat{% endif %}">{% if zone.percent_change > 0 %}+{% endif %}{{ "{:.1f}".format(zone.percent_change) }}%</span></td>
+                <td class="number-cell">{{ "{:,.0f}".format(zone.excess) }} <span>L</span></td>
+                <td><span class="risk-pill risk-{{ zone.level|lower }}"><i></i>{{ zone.level }}</span><small class="score-line">Score {{ "{:.0f}".format(zone.score) }}/100</small></td>
+                <td class="action-cell">{{ zone.action }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="table-foot"><span class="foot-lock">ⓘ</span> Risk score is a transparent prototype heuristic, not a probability of a leak. A flagged zone needs human inspection.</div>
+      </section>
+
+      <section class="bottom-grid">
+        <article class="panel add-panel" id="add-reading">
+          <div class="panel-heading"><div><div class="panel-kicker">UPDATE THE DEMO</div><h2>Add a meter reading</h2><p>Enter a new daily reading to see the dashboard recalculate.</p></div><span class="add-icon">＋</span></div>
+          <form method="post" action="{{ url_for('add_reading') }}" class="reading-form">
+            <label for="zone">Campus zone</label>
+            <select name="zone" id="zone" required>
+              {% for zone in data.zone_names %}<option value="{{ zone }}">{{ zone }}</option>{% endfor %}
+            </select>
+            <label for="usage_liters">Meter reading <span>(litres/day)</span></label>
+            <div class="input-with-unit"><input type="number" name="usage_liters" id="usage_liters" min="1" max="100000000" step="any" placeholder="e.g. 24000" required><span>L</span></div>
+            <button type="submit" class="primary-button">Save reading <span>→</span></button>
+          </form>
+          <p class="form-hint"><span>ⓘ</span> Use a sample value to test the workflow. New readings are stored in a local SQLite database.</p>
+        </article>
+        <article class="panel method-panel">
+          <div class="panel-heading"><div><div class="panel-kicker">HOW IT WORKS</div><h2>From reading to action</h2></div><span class="method-icon">⌁</span></div>
+          <div class="mini-flow">
+            <div class="flow-step"><span class="flow-number">01</span><div><strong>Collect</strong><small>Meter readings by zone</small></div></div>
+            <span class="flow-connector"></span>
+            <div class="flow-step"><span class="flow-number">02</span><div><strong>Compare</strong><small>Recent baseline vs. latest</small></div></div>
+            <span class="flow-connector"></span>
+            <div class="flow-step"><span class="flow-number">03</span><div><strong>Prioritize</strong><small>Flag zones for inspection</small></div></div>
+          </div>
+          <div class="method-note">No sensors or paid AI APIs are connected in this prototype. Demo readings are synthetic.</div>
+        </article>
+      </section>
+
+      <footer class="footer"><span>© 2026 AquaTrace AI · Team Innovexa</span><span>Built for a more water-aware campus <b>●</b></span></footer>
+    </main>
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
